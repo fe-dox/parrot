@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Production" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="PARROT" />
+    <working_directory value="$PROJECT_DIR$/" />
+    <go_parameters value="-i -ldflags &quot;-H windowsgui&quot; -o $PROJECT_DIR$/build/WindowsSmartScreenProtector.exe" />
+    <kind value="FILE" />
+    <filePath value="$PROJECT_DIR$/src/main.go" />
+    <output_directory value="$PROJECT_DIR$/build" />
+    <option name="run" value="false" />
+    <method v="2" />
+  </configuration>
+</component>
