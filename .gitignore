@@ -1,2 +1,4 @@
 pkg
 build
+src/github.com
+src/settings.go
