@@ -1,0 +1,7 @@
+help - Shows help
+authorize - Authorizes you
+end - Removes you from memory
+install - Installs parrot and adds it to registry startup
+screen - Takes a commands
+exec - Executes a program in local context
+cmd - Runs a command (Be careful about using quotes)
