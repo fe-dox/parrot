@@ -2,3 +2,4 @@ pkg
 build
 src/github.com
 src/settings.go
+src/internal/settings/bottoken.go
