@@ -13,7 +13,6 @@ func main() {
 		log.Panic(err)
 	}
 	telegraphist := telegraph.NewTelegraphist(bot)
-
 	bot.Debug = false
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
