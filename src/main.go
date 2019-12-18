@@ -23,6 +23,9 @@ func main() {
 	updates, err := bot.GetUpdatesChan(u)
 
 	for update := range updates {
+		if update.CallbackQuery != nil {
+			go telegraphist.HandleCallbackRequest(update)
+		}
 		if update.Message == nil {
 			continue
 		}
