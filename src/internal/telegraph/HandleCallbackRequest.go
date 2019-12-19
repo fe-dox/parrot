@@ -28,7 +28,7 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 		if err != nil {
 			t.ReportError("An error occurred while processing filesystemPath request", update.Message.Chat.ID)
 		}
-
+		panic("Implement Me PLS")
 	}
 }
 

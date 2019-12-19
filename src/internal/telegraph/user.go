@@ -2,8 +2,8 @@ package telegraph
 
 import (
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"os"
-	"path"
 	"path/filepath"
 )
 
@@ -28,8 +28,8 @@ type Directory struct {
 
 type Actions interface {
 	SetPath(s string) error
-	ScanPath(s string) Directory
-	ScanCurrentPath() Directory
+	ScanPath(s string) (Directory, error)
+	ScanCurrentPath() (Directory, error)
 }
 
 func (u User) ScanPath(s string) (Directory, error) {
@@ -51,7 +51,7 @@ func (u User) ScanPath(s string) (Directory, error) {
 	}
 	err = filepath.Walk(s, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
-			name := filepath.FromSlash(path)
+			name := filepath.Base(path)
 			dir.innerDirs = append(dir.innerDirs, Item{
 				name: name,
 				path: path,
@@ -92,8 +92,8 @@ func (u User) ScanCurrentPath() (Directory, error) {
 }
 
 func (u User) SetPath(s string) error {
-	if path.IsAbs(s) {
-		s = path.Clean(s)
+	if filepath.IsAbs(s) {
+		s = filepath.Clean(s)
 		pathStat, err := os.Stat(s)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -108,8 +108,8 @@ func (u User) SetPath(s string) error {
 		u.currentPath = s
 		return nil
 	} else {
-		s = path.Join(u.currentPath, s)
-		s = path.Clean(s)
+		s = filepath.Join(u.currentPath, s)
+		s = filepath.Clean(s)
 		pathStat, err := os.Stat(s)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -124,4 +124,14 @@ func (u User) SetPath(s string) error {
 		u.currentPath = s
 		return nil
 	}
+}
+
+func (t Telegraphist) PrepareFilesystemKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup {
+	keyboardRow := make([]tgbotapi.InlineKeyboardButton, len(d.innerDirs)+1)
+	parentDir := filepath.Clean(d.path + "\\..")
+	keyboardRow[0] = tgbotapi.NewInlineKeyboardButtonData("..", fmt.Sprintf("%v-%v", FilesystemPathRequest, parentDir))
+	for i, v := range d.innerDirs {
+		keyboardRow[i+1] = tgbotapi.NewInlineKeyboardButtonData(v.name, fmt.Sprintf("%v-%v", FilesystemPathRequest, d.path))
+	}
+	return tgbotapi.NewInlineKeyboardMarkup(keyboardRow)
 }
