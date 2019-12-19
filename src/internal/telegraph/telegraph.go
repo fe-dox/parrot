@@ -3,6 +3,7 @@ package telegraph
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"golang.org/x/tools/go/ssa/interp/testdata/src/fmt"
+	"path"
 )
 
 type Telegraph interface {
@@ -21,9 +22,11 @@ func NewTelegraphist(bot *tgbotapi.BotAPI) *Telegraphist {
 }
 
 func (t Telegraphist) PrepareFilesystemKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup {
-	keyboardRow := make([]tgbotapi.InlineKeyboardButton, len(d.innerDirs))
-	for i, v := range d.innerDirs {
-		keyboardRow[i] = tgbotapi.NewInlineKeyboardButtonData(v.name, fmt.Sprintf("%v-%v", FilesystemPathRequest, d.path))
+	keyboardRow := make([]tgbotapi.InlineKeyboardButton, len(d.innerDirs)+1)
+	parentDir := path.Clean(d.path + "\\..")
+	keyboardRow = append(keyboardRow, tgbotapi.NewInlineKeyboardButtonData("..", fmt.Sprintf("%v-%v", FilesystemPathRequest, parentDir)))
+	for _, v := range d.innerDirs {
+		keyboardRow = append(keyboardRow, tgbotapi.NewInlineKeyboardButtonData(v.name, fmt.Sprintf("%v-%v", FilesystemPathRequest, d.path)))
 	}
 	return tgbotapi.NewInlineKeyboardMarkup(keyboardRow)
 }

@@ -20,6 +20,23 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 		}
 		user := t.authenticatedUsers[update.Message.From.ID]
 		switch command {
+		case "test":
+			var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonURL("1.com", "http://1.com"),
+					tgbotapi.NewInlineKeyboardButtonSwitch("2sw", "open 2"),
+					tgbotapi.NewInlineKeyboardButtonData("3", "3"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("4", "4"),
+					tgbotapi.NewInlineKeyboardButtonData("5", "5"),
+					tgbotapi.NewInlineKeyboardButtonData("6", "6"),
+				),
+			)
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+			msg.ReplyMarkup = numericKeyboard
+			t.bot.Send(msg)
+
 		case "help":
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 			msg.Text = strings.Join([]string{
@@ -155,6 +172,22 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Your chat ID is no longer present in memory"))
 			if err != nil {
 				log.Println(err)
+			}
+		case "files":
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
+			dir, err := user.ScanCurrentPath()
+			if err != nil {
+				log.Println(err)
+				msg.Text = fmt.Sprintf("An error occured: %v", err)
+				t.bot.Send(msg)
+				return
+			}
+			msg.ReplyMarkup = t.PrepareFilesystemKeyboard(dir)
+			_, err = t.bot.Send(msg)
+			if err != nil {
+				log.Println(err)
+				t.ReportError(fmt.Sprintf("An error occured during sending a message: %v", err), update.Message.Chat.ID)
+				return
 			}
 
 		default:
