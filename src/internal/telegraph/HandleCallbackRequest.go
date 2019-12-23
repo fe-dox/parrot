@@ -3,7 +3,6 @@ package telegraph
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
-	"strings"
 )
 
 const (
@@ -30,9 +29,4 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 		}
 		panic("Implement Me PLS")
 	}
-}
-
-func splitCommandAndData(s string) (string, string) {
-	i := strings.Index(s, "-")
-	return s[:i], s[i+1:]
 }

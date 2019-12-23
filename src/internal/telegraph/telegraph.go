@@ -16,21 +16,6 @@ type Telegraphist struct {
 	callbackStack      CallbackStack
 }
 
-type (
-	CallbackStack       map[CallbackID]map[CallbackStackItemID]CallbackStackItem
-	CallbackID          int
-	CallbackStackItemID int
-	CallbackStackItem   struct {
-		Command string
-		Data    string
-	}
-)
-
-type StackResolver interface {
-	AddCallback(seed int64) CallbackID
-	AddCallbackItem(id CallbackID) CallbackStackItemID
-}
-
 func NewTelegraphist(bot *tgbotapi.BotAPI) *Telegraphist {
 	return &Telegraphist{bot: bot, authenticatedUsers: make(map[int]User), callbackStack: make(CallbackStack)}
 }
