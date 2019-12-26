@@ -174,7 +174,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				log.Println(err)
 			}
 		case "files":
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "_")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Directories")
 			dir, err := user.ScanCurrentPath()
 			if err != nil {
 				log.Println(err)

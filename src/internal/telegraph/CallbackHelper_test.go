@@ -11,7 +11,7 @@ func TestDecodeString(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     args
-		wantCsid CallbackID
+		wantCsid CallbackStackItemID
 		wantCiid CallbackItemID
 		wantErr  bool
 	}{
@@ -32,16 +32,16 @@ func TestDecodeString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCsid, gotCiid, err := DecodeString(tt.args.s)
+			gotCsid, gotCiid, err := decodeString(tt.args.s)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DecodeString() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("decodeString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotCsid != tt.wantCsid {
-				t.Errorf("DecodeString() gotCsid = %v, want %v", gotCsid, tt.wantCsid)
+				t.Errorf("decodeString() gotCsid = %v, want %v", gotCsid, tt.wantCsid)
 			}
 			if gotCiid != tt.wantCiid {
-				t.Errorf("DecodeString() gotCiid = %v, want %v", gotCiid, tt.wantCiid)
+				t.Errorf("decodeString() gotCiid = %v, want %v", gotCiid, tt.wantCiid)
 			}
 		})
 	}
@@ -49,7 +49,7 @@ func TestDecodeString(t *testing.T) {
 
 func TestPrepareString(t *testing.T) {
 	type args struct {
-		csid CallbackID
+		csid CallbackStackItemID
 		ciid CallbackItemID
 	}
 	tests := []struct {
@@ -65,8 +65,8 @@ func TestPrepareString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := PrepareString(tt.args.csid, tt.args.ciid); got != tt.want {
-				t.Errorf("PrepareString() = %v, want %v", got, tt.want)
+			if got := prepareString(tt.args.csid, tt.args.ciid); got != tt.want {
+				t.Errorf("prepareString() = %v, want %v", got, tt.want)
 			}
 		})
 	}

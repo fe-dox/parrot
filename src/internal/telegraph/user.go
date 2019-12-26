@@ -127,11 +127,16 @@ func (u User) SetPath(s string) error {
 }
 
 func (t Telegraphist) PrepareFilesystemKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup {
-	keyboardRow := make([]tgbotapi.InlineKeyboardButton, len(d.innerDirs)+1)
+	cbID := t.callbackStack.AddCallback()
+	innerDirsLen := len(d.innerDirs)
+	keyboardRow := make([]tgbotapi.InlineKeyboardButton, innerDirsLen+1)
 	parentDir := filepath.Clean(d.path + "\\..")
-	keyboardRow[0] = tgbotapi.NewInlineKeyboardButtonData("..", fmt.Sprintf("%v-%v", FilesystemPathRequest, parentDir))
+	keyboardRow[0] = t.callbackStack.CreateButton(cbID, "..", FilesystemPathRequest, parentDir)
 	for i, v := range d.innerDirs {
-		keyboardRow[i+1] = tgbotapi.NewInlineKeyboardButtonData(v.name, fmt.Sprintf("%v-%v", FilesystemPathRequest, d.path))
+		if i+1 == innerDirsLen {
+			v.name = "Rescan"
+		}
+		keyboardRow[i+1] = t.callbackStack.CreateButton(cbID, v.name, FilesystemPathRequest, d.path)
 	}
 	return tgbotapi.NewInlineKeyboardMarkup(keyboardRow)
 }
