@@ -11,7 +11,8 @@ const (
 )
 
 func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
-	if !t.authenticatedUsers[update.CallbackQuery.From.ID].authenticated {
+	user := t.authenticatedUsers[update.CallbackQuery.From.ID]
+	if user == nil || !user.authenticated {
 		t.bot.Send(tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "You are not authorized, use /authorize <code> to authorize yourself"))
 		return
 	}
@@ -19,7 +20,6 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 	if err != nil {
 		log.Println(err)
 	}
-	innerUser := t.authenticatedUsers[update.CallbackQuery.From.ID]
 	command, data, err := t.callbackStack.DecodeCallbackRequest(update.CallbackQuery.Data)
 	if err != nil {
 		log.Println(err)
@@ -29,15 +29,22 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 	fmt.Printf("Command: %q | Data: %q\n", command, data)
 	switch command {
 	case FilesystemPathRequest:
-		err := innerUser.SetPath(data)
+		err := user.SetPath(data)
 		if err != nil {
 			t.ReportError("An error occurred while processing filesystemPath request", update.CallbackQuery.Message.Chat.ID)
 		}
-		//dir, err := innerUser.ScanCurrentPath()
-		//if err != nil {
-		//	t.ReportError(fmt.Sprintf("Error while scanning current path: %v", err), update.CallbackQuery.Message.Chat.ID)
-		//}
-		t.ReportError("Not implemented yet", update.CallbackQuery.Message.Chat.ID)
+		dir, err := user.ScanCurrentPath()
+		if err != nil {
+			t.ReportError(fmt.Sprintf("Error while scanning current path: %v", err), update.CallbackQuery.Message.Chat.ID)
+		}
+		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Directories")
+		msg.ReplyMarkup = t.PrepareFilesystemKeyboard(dir)
+		_, err = t.bot.Send(msg)
+		if err != nil {
+			log.Println(err)
+			t.ReportError(fmt.Sprintf("An error occured during sending a message: %v", err), update.CallbackQuery.Message.Chat.ID)
+			return
+		}
 
 	default:
 		t.ReportError("Unknown callback command", update.CallbackQuery.Message.Chat.ID)

@@ -12,10 +12,10 @@ type Telegraph interface {
 
 type Telegraphist struct {
 	bot                *tgbotapi.BotAPI
-	authenticatedUsers map[int]User
+	authenticatedUsers map[int]*User
 	callbackStack      CallbackStack
 }
 
 func NewTelegraphist(bot *tgbotapi.BotAPI) *Telegraphist {
-	return &Telegraphist{bot: bot, authenticatedUsers: make(map[int]User), callbackStack: make(CallbackStack)}
+	return &Telegraphist{bot: bot, authenticatedUsers: make(map[int]*User), callbackStack: make(CallbackStack)}
 }

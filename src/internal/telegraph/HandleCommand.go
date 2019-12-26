@@ -13,12 +13,12 @@ import (
 func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 	if update.Message.IsCommand() {
+		user := t.authenticatedUsers[update.Message.From.ID]
 		command := update.Message.Command()
-		if !t.authenticatedUsers[update.Message.From.ID].authenticated && command != "authorize" {
+		if (user == nil || !user.authenticated) && command != "authorize" {
 			t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "You are not authorized, use /authorize <code> to authorize yourself"))
 			return
 		}
-		user := t.authenticatedUsers[update.Message.From.ID]
 		switch command {
 		case "test":
 			var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
@@ -54,6 +54,8 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			if err != nil {
 				log.Println(err)
 			}
+		case "dir":
+
 		case "pwd":
 			_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, user.currentPath))
 			if err != nil {
@@ -156,7 +158,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 		case "authorize":
 			inCode := strings.Join(strings.SplitAfter(update.Message.Text, "/authorize ")[1:], "")
 			if inCode == settings.AuthorizationCode {
-				t.authenticatedUsers[update.Message.From.ID] = User{authenticated: true, currentPath: getDirPath(os.Args[0])}
+				t.authenticatedUsers[update.Message.From.ID] = &User{authenticated: true, currentPath: getDirPath(os.Args[0])}
 				_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Code correct :)"))
 				if err != nil {
 					log.Println(err)

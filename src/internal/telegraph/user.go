@@ -3,6 +3,7 @@ package telegraph
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -49,22 +50,23 @@ func (u User) ScanPath(s string) (Directory, error) {
 			innerDirs:  nil,
 		}, err
 	}
-	err = filepath.Walk(s, func(path string, info os.FileInfo, err error) error {
+	files, err := ioutil.ReadDir(dir.path)
+	for _, info := range files {
 		if info.IsDir() {
-			name := filepath.Base(path)
+			name := info.Name()
 			dir.innerDirs = append(dir.innerDirs, Item{
 				name: name,
-				path: path,
+				path: filepath.Clean(dir.path + "\\" + name),
 				info: info,
 			})
 		} else {
 			dir.innerFiles = append(dir.innerFiles, Item{
-				path: path,
+				path: filepath.Clean(dir.path + "\\" + info.Name()),
 				info: info,
 			})
 		}
-		return err
-	})
+
+	}
 
 	if err != nil {
 		return Directory{
@@ -77,7 +79,7 @@ func (u User) ScanPath(s string) (Directory, error) {
 	return dir, nil
 }
 
-func (u User) ScanCurrentPath() (Directory, error) {
+func (u *User) ScanCurrentPath() (Directory, error) {
 	tmpDir, err := u.ScanPath(u.currentPath)
 	if err != nil {
 		return Directory{
@@ -91,7 +93,7 @@ func (u User) ScanCurrentPath() (Directory, error) {
 	return u.currentDir, nil
 }
 
-func (u User) SetPath(s string) error {
+func (u *User) SetPath(s string) error {
 	if filepath.IsAbs(s) {
 		s = filepath.Clean(s)
 		pathStat, err := os.Stat(s)
@@ -128,15 +130,37 @@ func (u User) SetPath(s string) error {
 
 func (t Telegraphist) PrepareFilesystemKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup {
 	cbID := t.callbackStack.AddCallback()
-	innerDirsLen := len(d.innerDirs)
-	keyboardRow := make([]tgbotapi.InlineKeyboardButton, innerDirsLen+1)
+
 	parentDir := filepath.Clean(d.path + "\\..")
-	keyboardRow[0] = t.callbackStack.CreateButton(cbID, "..", FilesystemPathRequest, parentDir)
-	for i, v := range d.innerDirs {
-		if i+1 == innerDirsLen {
-			v.name = "Rescan"
+
+	functionalRow := make([]tgbotapi.InlineKeyboardButton, 2)
+	functionalRow[0] = t.callbackStack.CreateButton(cbID, "🔝", FilesystemPathRequest, parentDir)
+	functionalRow[1] = t.callbackStack.CreateButton(cbID, "↩", FilesystemPathRequest, d.path)
+
+	chunkedInnerDirs := chunkArray(d.innerDirs, 5)
+
+	allRows := make([][]tgbotapi.InlineKeyboardButton, len(chunkedInnerDirs)+1)
+	allRows[0] = functionalRow
+
+	for j, x := range chunkedInnerDirs {
+		dataRow := make([]tgbotapi.InlineKeyboardButton, len(x))
+		for i, v := range x {
+			dataRow[i] = t.callbackStack.CreateButton(cbID, v.name, FilesystemPathRequest, v.path)
 		}
-		keyboardRow[i+1] = t.callbackStack.CreateButton(cbID, v.name, FilesystemPathRequest, d.path)
+		allRows[j+1] = dataRow
 	}
-	return tgbotapi.NewInlineKeyboardMarkup(keyboardRow)
+
+	return tgbotapi.InlineKeyboardMarkup{InlineKeyboard: allRows}
+}
+
+func chunkArray(arr []Item, chunkSize int) [][]Item {
+	var divided [][]Item
+	for i := 0; i < len(arr); i += chunkSize {
+		end := i + chunkSize
+		if end > len(arr) {
+			end = len(arr)
+		}
+		divided = append(divided, arr[i:end])
+	}
+	return divided
 }
