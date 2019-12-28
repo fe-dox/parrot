@@ -11,6 +11,8 @@ const (
 	ListFilesRequest             = "ListFilesRequest"
 	FilesystemTextSummaryRequest = "FilesystemTextSummaryRequest"
 	DownloadFileRequest          = "DownloadFileRequest"
+	ChangePathRequest            = "ChangePathRequest"
+	SendMessageRequest           = "SendMessageRequest"
 )
 
 func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
@@ -22,7 +24,7 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 	command, data, err := t.callbackStack.DecodeCallbackRequest(update.CallbackQuery.Data)
 	if err != nil {
 		log.Println(err)
-		t.ReportError(fmt.Sprintf("Error: %v", err), update.CallbackQuery.Message.Chat.ID)
+		t.QuickSend(fmt.Sprintf("Error: %v", err), update.CallbackQuery.Message.Chat.ID)
 		return
 	}
 	fmt.Printf("Command: %q | Data: %q\n", command, data)
@@ -30,25 +32,27 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 	case FilesystemWalkRequest:
 		err := user.SetPath(data)
 		if err != nil {
-			t.ReportError("An error occurred while processing filesystemPath request", update.CallbackQuery.Message.Chat.ID)
+			t.QuickSend("An error occurred while processing filesystemPath request", update.CallbackQuery.Message.Chat.ID)
+			return
 		}
 		dir, err := user.ScanCurrentPath()
 		if err != nil {
-			t.ReportError(fmt.Sprintf("Error while scanning current path: %v", err), update.CallbackQuery.Message.Chat.ID)
+			t.QuickSend(fmt.Sprintf("Error while scanning current path: %v", err), update.CallbackQuery.Message.Chat.ID)
+			return
 		}
 		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("Directories inside %q\n\nNumber of directories inside: %v\nNumber of files inside: %v", dir.info.Name(), len(dir.innerDirs), len(dir.innerFiles)))
 		msg.ReplyMarkup = t.PrepareDirectoriesKeyboard(dir)
 		_, err = t.bot.Send(msg)
 		if err != nil {
 			log.Println(err)
-			t.ReportError(fmt.Sprintf("An error occured during sending a message: %v", err), update.CallbackQuery.Message.Chat.ID)
+			t.QuickSend(fmt.Sprintf("An error occured during sending a message: %v", err), update.CallbackQuery.Message.Chat.ID)
 		}
 		t.answerCallback(update)
 	case FilesystemTextSummaryRequest:
 		dir, err := user.ScanPath(data)
 		if err != nil {
 			log.Println(err)
-			t.ReportError(fmt.Sprintf("Error while scanning path: %v", err), update.CallbackQuery.Message.Chat.ID)
+			t.QuickSend(fmt.Sprintf("Error while scanning path: %v", err), update.CallbackQuery.Message.Chat.ID)
 			t.answerCallback(update)
 			return
 		}
@@ -61,7 +65,7 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 			_, err := t.bot.Send(doc)
 			if err != nil {
 				log.Println(err)
-				t.ReportError(fmt.Sprintf("Couldn't send file: %v", err), update.CallbackQuery.Message.Chat.ID)
+				t.QuickSend(fmt.Sprintf("Couldn't send file: %v", err), update.CallbackQuery.Message.Chat.ID)
 			}
 		} else {
 			_, err := t.bot.Send(tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, strDir))
@@ -74,7 +78,7 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 		dir, err := user.ScanPath(data)
 		if err != nil {
 			log.Println(err)
-			t.ReportError(fmt.Sprintf("Error while scanning path: %v", err), update.CallbackQuery.Message.Chat.ID)
+			t.QuickSend(fmt.Sprintf("Error while scanning path: %v", err), update.CallbackQuery.Message.Chat.ID)
 			t.answerCallback(update)
 			return
 		}
@@ -90,11 +94,27 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 		_, err = t.bot.Send(fileUpload)
 		if err != nil {
 			log.Println(err)
-			t.ReportError(fmt.Sprintf("Couldn't send file: %v", err), update.CallbackQuery.Message.Chat.ID)
+			t.QuickSend(fmt.Sprintf("Couldn't send file: %v", err), update.CallbackQuery.Message.Chat.ID)
 		}
 		t.answerCallback(update)
+	case SendMessageRequest:
+		t.QuickSend(data, update.CallbackQuery.Message.Chat.ID)
+		t.answerCallback(update)
+	case ChangePathRequest:
+		csID, _, _ := DecodeString(update.CallbackQuery.Data)
+		if csID != 0 {
+			t.callbackStack.ClearCallback(csID)
+		}
+		err := user.SetPath(data)
+		if err != nil {
+			t.QuickSend(fmt.Sprintf("Couldn't change path to %q", data), update.CallbackQuery.Message.Chat.ID)
+			t.answerCallback(update)
+			return
+		}
+		t.QuickSend(fmt.Sprintf("Path changed to %q", data), update.CallbackQuery.Message.Chat.ID)
+		t.answerCallback(update)
 	default:
-		t.ReportError(fmt.Sprintf("Unknown callback command %v", command), update.CallbackQuery.Message.Chat.ID)
+		t.QuickSend(fmt.Sprintf("Unknown callback command %v", command), update.CallbackQuery.Message.Chat.ID)
 	}
 }
 

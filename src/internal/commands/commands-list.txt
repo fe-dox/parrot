@@ -5,3 +5,8 @@ install - Installs parrot and adds it to registry startup
 screen - Takes a commands
 exec - Executes a program in local context
 cmd - Runs a command (Be careful about using quotes)
+cd - Enters a folder
+ls - Lists a folder
+download - Let's you download files
+files - Opens file system GUI
+jump - allows you to quickly travel to environmental variables

@@ -66,12 +66,12 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 		case "install":
 			ok, err := commands.Install(os.Args[0])
 			if err != nil {
-				t.ReportError(fmt.Sprintf("An error occured: %v", err), update.Message.Chat.ID)
+				t.QuickSend(fmt.Sprintf("An error occured: %v", err), update.Message.Chat.ID)
 			}
 			if !ok {
-				t.ReportError("Something went wrong :(", update.Message.Chat.ID)
+				t.QuickSend("Something went wrong :(", update.Message.Chat.ID)
 			} else {
-				t.ReportError("Success :)", update.Message.Chat.ID)
+				t.QuickSend("Success :)", update.Message.Chat.ID)
 			}
 		case "uninstall":
 			ok, err := commands.Uninstall()
@@ -111,7 +111,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			img, err := commands.TakeScreenShot()
 			if err != nil {
 				errorText := fmt.Sprintf("An error occured during taking screenshot: %v", err)
-				t.ReportError(errorText, update.Message.Chat.ID)
+				t.QuickSend(errorText, update.Message.Chat.ID)
 				log.Println(err)
 			}
 			for _, img2send := range img {
@@ -191,14 +191,14 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			_, err = t.bot.Send(msg)
 			if err != nil {
 				log.Println(err)
-				t.ReportError(fmt.Sprintf("An error occured during sending a message: %v", err), update.Message.Chat.ID)
+				t.QuickSend(fmt.Sprintf("An error occured during sending a message: %v", err), update.Message.Chat.ID)
 				return
 			}
 		case "cd":
 			var sID string
 			sIDs := strings.Fields(update.Message.Text)
 			if len(sIDs) < 2 {
-				t.ReportError("You have to provide parameter", update.Message.Chat.ID)
+				t.QuickSend("You have to provide parameter", update.Message.Chat.ID)
 				return
 			}
 			sID = sIDs[1]
@@ -207,25 +207,25 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				nPath := strings.Join(sIDs[1:], " ")
 				err := user.SetPath(nPath)
 				if err != nil {
-					t.ReportError(fmt.Sprintf("Couldn't set path %q: %v", nPath, err), update.Message.Chat.ID)
+					t.QuickSend(fmt.Sprintf("Couldn't set path %q: %v", nPath, err), update.Message.Chat.ID)
 					return
 				}
 			} else {
 				if user.currentDir.innerDirs == nil {
-					t.ReportError(fmt.Sprintf("Your current directory (%v) has no subdirectories", user.currentDir.info.Name()), update.Message.Chat.ID)
+					t.QuickSend(fmt.Sprintf("Your current directory (%v) has no subdirectories", user.currentDir.info.Name()), update.Message.Chat.ID)
 					return
 				}
 				if len(user.currentDir.innerDirs)-1 < int(id) {
-					t.ReportError(fmt.Sprintf("You have to provide valid directory id"), update.Message.Chat.ID)
+					t.QuickSend(fmt.Sprintf("You have to provide valid directory id"), update.Message.Chat.ID)
 					return
 				}
 				err = user.SetPath(user.currentDir.innerDirs[id].path)
 				if err != nil {
-					t.ReportError(fmt.Sprintf("Couldn't change path to %q: %v", user.currentDir.innerDirs[id].path, err), update.Message.Chat.ID)
+					t.QuickSend(fmt.Sprintf("Couldn't change path to %q: %v", user.currentDir.innerDirs[id].path, err), update.Message.Chat.ID)
 					return
 				}
 			}
-			t.ReportError(fmt.Sprintf("Path changed to %q", user.currentPath), update.Message.Chat.ID)
+			t.QuickSend(fmt.Sprintf("Path changed to %q", user.currentPath), update.Message.Chat.ID)
 		case "download":
 			downloadIDs := strings.Fields(update.Message.Text)[1:]
 			var wg sync.WaitGroup
@@ -235,23 +235,23 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 					defer wg.Done()
 					id, err := strconv.ParseInt(sID, 10, 64)
 					if err != nil {
-						t.ReportError(fmt.Sprintf("An error occured while parsing id %q: %v", sID, err), update.Message.Chat.ID)
+						t.QuickSend(fmt.Sprintf("An error occured while parsing id %q: %v", sID, err), update.Message.Chat.ID)
 						return
 					}
 					fUpload := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, user.currentDir.innerFiles[id].path)
 					_, err = t.bot.Send(fUpload)
 					if err != nil {
-						t.ReportError(fmt.Sprintf("Couldn't send file %q: %v", user.currentDir.innerFiles[id].name, err), update.Message.Chat.ID)
+						t.QuickSend(fmt.Sprintf("Couldn't send file %q: %v", user.currentDir.innerFiles[id].name, err), update.Message.Chat.ID)
 					}
 				}(sID)
 			}
 			wg.Wait()
-			t.ReportError("All files sent", update.Message.Chat.ID)
+			t.QuickSend("All files sent", update.Message.Chat.ID)
 		case "ls":
 			dir, err := user.ScanPath(user.currentPath)
 			if err != nil {
 				log.Println(err)
-				t.ReportError(fmt.Sprintf("Error while scanning path: %v", err), update.Message.Chat.ID)
+				t.QuickSend(fmt.Sprintf("Error while scanning path: %v", err), update.Message.Chat.ID)
 				t.answerCallback(update)
 				return
 			}
@@ -264,7 +264,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				_, err := t.bot.Send(doc)
 				if err != nil {
 					log.Println(err)
-					t.ReportError(fmt.Sprintf("Couldn't send file: %v", err), update.Message.Chat.ID)
+					t.QuickSend(fmt.Sprintf("Couldn't send file: %v", err), update.Message.Chat.ID)
 				}
 			} else {
 				_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, strDir))
@@ -272,6 +272,34 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 					log.Println(err)
 				}
 			}
+		case "jump":
+			params := strings.Fields(update.Message.Text)
+			if len(params) != 2 {
+				t.QuickSend("You have to provide exactly one parameter", update.Message.Chat.ID)
+				return
+			}
+			params = params[1:]
+			nPath := os.Getenv(params[0])
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
+			msg.Text = fmt.Sprintf("Do you want to change your current path to %q ?", nPath)
+			cbID := t.callbackStack.AddCallback()
+			yesItem := CallbackItem{
+				Command: ChangePathRequest,
+				Data:    nPath,
+			}
+			noItem := CallbackItem{
+				Command: SendMessageRequest,
+				Data:    "Path has not changed",
+			}
+			yID := t.callbackStack[cbID].AddItem(yesItem)
+			nID := t.callbackStack[cbID].AddItem(noItem)
+			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("Yes", fmt.Sprintf("%v-%v", cbID, yID)),
+					tgbotapi.NewInlineKeyboardButtonData("No", fmt.Sprintf("%v-%v", cbID, nID)),
+				),
+			)
+			t.bot.Send(msg)
 		default:
 			_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "I don't know this command"))
 			if err != nil {
