@@ -36,7 +36,7 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 		if err != nil {
 			t.ReportError(fmt.Sprintf("Error while scanning current path: %v", err), update.CallbackQuery.Message.Chat.ID)
 		}
-		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Directories")
+		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("Directories inside %q\n\nNumber of directories inside: %v\nNumber of files inside: %v", dir.info.Name(), len(dir.innerDirs), len(dir.innerFiles)))
 		msg.ReplyMarkup = t.PrepareDirectoriesKeyboard(dir)
 		_, err = t.bot.Send(msg)
 		if err != nil {
@@ -78,7 +78,7 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 			t.answerCallback(update)
 			return
 		}
-		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("Files in %v", dir.info.Name()))
+		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("Files in %q\n\nNumber of directories: %v\nNumber of files: %v", dir.info.Name(), len(dir.innerDirs), len(dir.innerFiles)))
 		msg.ReplyMarkup = t.PrepareFilesKeyboard(dir)
 		_, err = t.bot.Send(msg)
 		if err != nil {

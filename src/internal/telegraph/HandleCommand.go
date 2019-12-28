@@ -7,7 +7,9 @@ import (
 	"internal/settings"
 	"log"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
 )
 
 func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
@@ -176,7 +178,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				log.Println(err)
 			}
 		case "files":
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Directories")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 			dir, err := user.ScanCurrentPath()
 			if err != nil {
 				log.Println(err)
@@ -184,6 +186,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				t.bot.Send(msg)
 				return
 			}
+			msg.Text = fmt.Sprintf("Directories inside %q\n\nNumber of directories inside: %v\nNumber of files inside: %v", dir.info.Name(), len(dir.innerDirs), len(dir.innerFiles))
 			msg.ReplyMarkup = t.PrepareDirectoriesKeyboard(dir)
 			_, err = t.bot.Send(msg)
 			if err != nil {
@@ -191,7 +194,84 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				t.ReportError(fmt.Sprintf("An error occured during sending a message: %v", err), update.Message.Chat.ID)
 				return
 			}
-
+		case "cd":
+			var sID string
+			sIDs := strings.Fields(update.Message.Text)
+			if len(sIDs) < 2 {
+				t.ReportError("You have to provide parameter", update.Message.Chat.ID)
+				return
+			}
+			sID = sIDs[1]
+			id, err := strconv.ParseInt(sID, 10, 64)
+			if err != nil {
+				nPath := strings.Join(sIDs[1:], " ")
+				err := user.SetPath(nPath)
+				if err != nil {
+					t.ReportError(fmt.Sprintf("Couldn't set path %q: %v", nPath, err), update.Message.Chat.ID)
+					return
+				}
+			} else {
+				if user.currentDir.innerDirs == nil {
+					t.ReportError(fmt.Sprintf("Your current directory (%v) has no subdirectories", user.currentDir.info.Name()), update.Message.Chat.ID)
+					return
+				}
+				if len(user.currentDir.innerDirs)-1 < int(id) {
+					t.ReportError(fmt.Sprintf("You have to provide valid directory id"), update.Message.Chat.ID)
+					return
+				}
+				err = user.SetPath(user.currentDir.innerDirs[id].path)
+				if err != nil {
+					t.ReportError(fmt.Sprintf("Couldn't change path to %q: %v", user.currentDir.innerDirs[id].path, err), update.Message.Chat.ID)
+					return
+				}
+			}
+			t.ReportError(fmt.Sprintf("Path changed to %q", user.currentPath), update.Message.Chat.ID)
+		case "download":
+			downloadIDs := strings.Fields(update.Message.Text)[1:]
+			var wg sync.WaitGroup
+			wg.Add(len(downloadIDs))
+			for _, sID := range downloadIDs {
+				go func(sID string) {
+					defer wg.Done()
+					id, err := strconv.ParseInt(sID, 10, 64)
+					if err != nil {
+						t.ReportError(fmt.Sprintf("An error occured while parsing id %q: %v", sID, err), update.Message.Chat.ID)
+						return
+					}
+					fUpload := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, user.currentDir.innerFiles[id].path)
+					_, err = t.bot.Send(fUpload)
+					if err != nil {
+						t.ReportError(fmt.Sprintf("Couldn't send file %q: %v", user.currentDir.innerFiles[id].name, err), update.Message.Chat.ID)
+					}
+				}(sID)
+			}
+			wg.Wait()
+			t.ReportError("All files sent", update.Message.Chat.ID)
+		case "ls":
+			dir, err := user.ScanPath(user.currentPath)
+			if err != nil {
+				log.Println(err)
+				t.ReportError(fmt.Sprintf("Error while scanning path: %v", err), update.Message.Chat.ID)
+				t.answerCallback(update)
+				return
+			}
+			strDir := dir.String()
+			if len(strDir) > 4095 {
+				doc := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, tgbotapi.FileBytes{
+					Name:  dir.info.Name(),
+					Bytes: []byte(strDir),
+				})
+				_, err := t.bot.Send(doc)
+				if err != nil {
+					log.Println(err)
+					t.ReportError(fmt.Sprintf("Couldn't send file: %v", err), update.Message.Chat.ID)
+				}
+			} else {
+				_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, strDir))
+				if err != nil {
+					log.Println(err)
+				}
+			}
 		default:
 			_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "I don't know this command"))
 			if err != nil {
