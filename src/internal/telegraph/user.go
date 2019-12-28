@@ -176,11 +176,13 @@ func (t Telegraphist) PrepareFilesKeyboard(d Directory) tgbotapi.InlineKeyboardM
 	cbID := t.callbackStack.AddCallback()
 	functionalRow := make([]tgbotapi.InlineKeyboardButton, 3)
 	functionalRow[0] = t.callbackStack.CreateButton(cbID, "↩", ListFilesRequest, d.path)
-	functionalRow[1] = t.callbackStack.CreateButton(cbID, "📦", FilesystemWalkRequest, d.path)
+	functionalRow[1] = t.callbackStack.CreateButton(cbID, "📂", FilesystemWalkRequest, d.path)
 	functionalRow[2] = t.callbackStack.CreateButton(cbID, "📝", FilesystemTextSummaryRequest, d.path)
 
 	chunkedInnerFiles := chunkArray(d.innerFiles, 5)
 	allRows := make([][]tgbotapi.InlineKeyboardButton, len(chunkedInnerFiles)+1)
+	allRows[0] = functionalRow
+
 	for j, x := range chunkedInnerFiles {
 		dataRow := make([]tgbotapi.InlineKeyboardButton, len(x))
 		for i, v := range x {
