@@ -61,7 +61,7 @@ func (c CallbackStack) CreateButton(csid CallbackStackItemID, text string, comma
 }
 
 func (c CallbackStack) DecodeCallbackRequest(s string) (command, data string, err error) {
-	csid, ciid, err := decodeString(s)
+	csid, ciid, err := DecodeString(s)
 	if err != nil {
 		return "", "", err
 	}
@@ -76,7 +76,7 @@ func prepareString(csid CallbackStackItemID, ciid CallbackItemID) string {
 	return fmt.Sprintf("%v-%v", csid, ciid)
 }
 
-func decodeString(s string) (csid CallbackStackItemID, ciid CallbackItemID, err error) {
+func DecodeString(s string) (csid CallbackStackItemID, ciid CallbackItemID, err error) {
 	ss := strings.SplitN(s, "-", 2)
 	pint, err := strconv.ParseInt(ss[0], 10, 64)
 	if err != nil {

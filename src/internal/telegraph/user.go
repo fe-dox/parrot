@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type User struct {
@@ -31,6 +32,21 @@ type Actions interface {
 	SetPath(s string) error
 	ScanPath(s string) (Directory, error)
 	ScanCurrentPath() (Directory, error)
+}
+
+func (d Directory) String() string {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("Directory %v\n", d.info.Name()))
+	b.WriteString(fmt.Sprintf("Full path: %v\n", d.path))
+	b.WriteString("\nInner Directories:\n")
+	for _, v := range d.innerDirs {
+		b.WriteString(fmt.Sprintf("-%v\n", v.name))
+	}
+	b.WriteString("\nInner Files:\n")
+	for _, v := range d.innerFiles {
+		b.WriteString(fmt.Sprintf("-%v\n", v.name))
+	}
+	return b.String()
 }
 
 func (u User) ScanPath(s string) (Directory, error) {
@@ -61,6 +77,7 @@ func (u User) ScanPath(s string) (Directory, error) {
 			})
 		} else {
 			dir.innerFiles = append(dir.innerFiles, Item{
+				name: info.Name(),
 				path: filepath.Clean(dir.path + "\\" + info.Name()),
 				info: info,
 			})
@@ -128,14 +145,16 @@ func (u *User) SetPath(s string) error {
 	}
 }
 
-func (t Telegraphist) PrepareFilesystemKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup {
+func (t Telegraphist) PrepareDirectoriesKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup {
 	cbID := t.callbackStack.AddCallback()
 
 	parentDir := filepath.Clean(d.path + "\\..")
 
-	functionalRow := make([]tgbotapi.InlineKeyboardButton, 2)
-	functionalRow[0] = t.callbackStack.CreateButton(cbID, "🔝", FilesystemPathRequest, parentDir)
-	functionalRow[1] = t.callbackStack.CreateButton(cbID, "↩", FilesystemPathRequest, d.path)
+	functionalRow := make([]tgbotapi.InlineKeyboardButton, 4)
+	functionalRow[0] = t.callbackStack.CreateButton(cbID, "⬆", FilesystemWalkRequest, parentDir)
+	functionalRow[1] = t.callbackStack.CreateButton(cbID, "↩", FilesystemWalkRequest, d.path)
+	functionalRow[2] = t.callbackStack.CreateButton(cbID, "📦", ListFilesRequest, d.path)
+	functionalRow[3] = t.callbackStack.CreateButton(cbID, "📝", FilesystemTextSummaryRequest, d.path)
 
 	chunkedInnerDirs := chunkArray(d.innerDirs, 5)
 
@@ -145,11 +164,30 @@ func (t Telegraphist) PrepareFilesystemKeyboard(d Directory) tgbotapi.InlineKeyb
 	for j, x := range chunkedInnerDirs {
 		dataRow := make([]tgbotapi.InlineKeyboardButton, len(x))
 		for i, v := range x {
-			dataRow[i] = t.callbackStack.CreateButton(cbID, v.name, FilesystemPathRequest, v.path)
+			dataRow[i] = t.callbackStack.CreateButton(cbID, v.name, FilesystemWalkRequest, v.path)
 		}
 		allRows[j+1] = dataRow
 	}
 
+	return tgbotapi.InlineKeyboardMarkup{InlineKeyboard: allRows}
+}
+
+func (t Telegraphist) PrepareFilesKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup {
+	cbID := t.callbackStack.AddCallback()
+	functionalRow := make([]tgbotapi.InlineKeyboardButton, 3)
+	functionalRow[0] = t.callbackStack.CreateButton(cbID, "↩", ListFilesRequest, d.path)
+	functionalRow[1] = t.callbackStack.CreateButton(cbID, "📦", FilesystemWalkRequest, d.path)
+	functionalRow[2] = t.callbackStack.CreateButton(cbID, "📝", FilesystemTextSummaryRequest, d.path)
+
+	chunkedInnerFiles := chunkArray(d.innerFiles, 5)
+	allRows := make([][]tgbotapi.InlineKeyboardButton, len(chunkedInnerFiles)+1)
+	for j, x := range chunkedInnerFiles {
+		dataRow := make([]tgbotapi.InlineKeyboardButton, len(x))
+		for i, v := range x {
+			dataRow[i] = t.callbackStack.CreateButton(cbID, v.name, DownloadFileRequest, v.path)
+		}
+		allRows[j+1] = dataRow
+	}
 	return tgbotapi.InlineKeyboardMarkup{InlineKeyboard: allRows}
 }
 

@@ -122,7 +122,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 		case "exec":
 			cmd := strings.Join(strings.SplitAfter(update.Message.Text, "/exec")[1:], " ")
 			out := commands.StartCommand(cmd)
-			if len(out) > 4096 {
+			if len(out) > 4095 {
 				doc := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, tgbotapi.FileBytes{
 					Name:  "exec.txt",
 					Bytes: []byte(out),
@@ -140,7 +140,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 		case "cmd":
 			cmd := strings.Join(strings.SplitAfter(update.Message.Text, "/cmd")[1:], " ")
 			out := commands.RunCommand(cmd)
-			if len(out) > 4096 {
+			if len(out) > 4095 {
 				doc := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, tgbotapi.FileBytes{
 					Name:  "command.txt",
 					Bytes: []byte(out),
@@ -184,7 +184,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				t.bot.Send(msg)
 				return
 			}
-			msg.ReplyMarkup = t.PrepareFilesystemKeyboard(dir)
+			msg.ReplyMarkup = t.PrepareDirectoriesKeyboard(dir)
 			_, err = t.bot.Send(msg)
 			if err != nil {
 				log.Println(err)

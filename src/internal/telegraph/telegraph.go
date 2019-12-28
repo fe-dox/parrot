@@ -7,7 +7,8 @@ import (
 type Telegraph interface {
 	HandleCommand(update tgbotapi.Update)
 	HandleCallbackRequest(update tgbotapi.Update)
-	PrepareFilesystemKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup
+	PrepareDirectoriesKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup
+	PrepareFilesKeyboard(d Directory) tgbotapi.InlineKeyboardMarkup
 }
 
 type Telegraphist struct {

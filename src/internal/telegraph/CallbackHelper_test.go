@@ -32,16 +32,16 @@ func TestDecodeString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCsid, gotCiid, err := decodeString(tt.args.s)
+			gotCsid, gotCiid, err := DecodeString(tt.args.s)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("decodeString() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DecodeString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotCsid != tt.wantCsid {
-				t.Errorf("decodeString() gotCsid = %v, want %v", gotCsid, tt.wantCsid)
+				t.Errorf("DecodeString() gotCsid = %v, want %v", gotCsid, tt.wantCsid)
 			}
 			if gotCiid != tt.wantCiid {
-				t.Errorf("decodeString() gotCiid = %v, want %v", gotCiid, tt.wantCiid)
+				t.Errorf("DecodeString() gotCiid = %v, want %v", gotCiid, tt.wantCiid)
 			}
 		})
 	}
