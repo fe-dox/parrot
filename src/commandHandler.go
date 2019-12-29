@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/reujab/wallpaper"
 	"log"
 	"os"
 	"strconv"
@@ -292,6 +293,35 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				),
 			)
 			t.bot.Send(msg)
+		case "wallpaper":
+			params := strings.Fields(update.Message.Text)
+			if (len(params) == 2 && params[1] != "get") || (len(params) == 3 && params[1] != "set") {
+				t.QuickSend("You have to provide correct number of parameters", update.Message.Chat.ID)
+			}
+			params = params[1:]
+			switch params[0] {
+			case "get":
+				fs, err := wallpaper.Get()
+				if err != nil {
+					t.QuickSend(fmt.Sprintf("Couldn't send wallpaper: %v", err), update.Message.Chat.ID)
+					return
+				}
+				d := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, fs)
+				_, err = t.bot.Send(d)
+				if err != nil {
+					t.QuickSend(fmt.Sprintf("Couldn't send wallpaper: %v", err), update.Message.Chat.ID)
+				}
+			case "set":
+				err := wallpaper.SetFromURL(params[1])
+				if err != nil {
+					t.QuickSend(fmt.Sprintf("Couldn't set wallpaper: %v", err), update.Message.Chat.ID)
+					return
+				}
+				t.QuickSend("Wallpaper set", update.Message.Chat.ID)
+			default:
+				t.QuickSend(fmt.Sprintf("Unknown argument %q", params[0]), update.Message.Chat.ID)
+			}
+
 		default:
 			_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "I don't know this command"))
 			if err != nil {
