@@ -1,4 +1,4 @@
-package telegraph
+package main
 
 import (
 	"fmt"
@@ -59,7 +59,7 @@ func (t Telegraphist) HandleCallbackRequest(update tgbotapi.Update) {
 		strDir := dir.String()
 		if len(strDir) > 4095 {
 			doc := tgbotapi.NewDocumentUpload(update.CallbackQuery.Message.Chat.ID, tgbotapi.FileBytes{
-				Name:  dir.info.Name(),
+				Name:  dir.info.Name() + ".txt",
 				Bytes: []byte(strDir),
 			})
 			_, err := t.bot.Send(doc)

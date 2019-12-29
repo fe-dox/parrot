@@ -2,8 +2,6 @@ package main
 
 import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"internal/settings"
-	"internal/telegraph"
 	"log"
 )
 
@@ -12,7 +10,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	telegraphist := telegraph.NewTelegraphist(bot)
+	telegraphist := NewTelegraphist(bot)
 	bot.Debug = false
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
@@ -30,5 +28,6 @@ func main() {
 			continue
 		}
 		go telegraphist.HandleCommand(update)
+
 	}
 }

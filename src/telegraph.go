@@ -1,4 +1,4 @@
-package telegraph
+package main
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -19,4 +19,8 @@ type Telegraphist struct {
 
 func NewTelegraphist(bot *tgbotapi.BotAPI) *Telegraphist {
 	return &Telegraphist{bot: bot, authenticatedUsers: make(map[int]*User), callbackStack: make(CallbackStack)}
+}
+
+func (t Telegraphist) QuickSend(message string, chatID int64) {
+	t.bot.Send(tgbotapi.NewMessage(chatID, message))
 }

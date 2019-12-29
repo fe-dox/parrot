@@ -1,10 +1,8 @@
-package telegraph
+package main
 
 import (
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"internal/commands"
-	"internal/settings"
 	"log"
 	"os"
 	"strconv"
@@ -64,7 +62,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				fmt.Println(err)
 			}
 		case "install":
-			ok, err := commands.Install(os.Args[0])
+			ok, err := Install(os.Args[0])
 			if err != nil {
 				t.QuickSend(fmt.Sprintf("An error occured: %v", err), update.Message.Chat.ID)
 			}
@@ -74,7 +72,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				t.QuickSend("Success :)", update.Message.Chat.ID)
 			}
 		case "uninstall":
-			ok, err := commands.Uninstall()
+			ok, err := Uninstall()
 			if err != nil {
 				_, err = t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Something went wrong: %v", err)))
 				if err != nil {
@@ -108,7 +106,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 				}
 			}
 		case "screen":
-			img, err := commands.TakeScreenShot()
+			img, err := TakeScreenShot()
 			if err != nil {
 				errorText := fmt.Sprintf("An error occured during taking screenshot: %v", err)
 				t.QuickSend(errorText, update.Message.Chat.ID)
@@ -123,7 +121,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			}
 		case "exec":
 			cmd := strings.Join(strings.SplitAfter(update.Message.Text, "/exec")[1:], " ")
-			out := commands.StartCommand(cmd)
+			out := StartCommand(cmd)
 			if len(out) > 4095 {
 				doc := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, tgbotapi.FileBytes{
 					Name:  "exec.txt",
@@ -141,7 +139,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			}
 		case "cmd":
 			cmd := strings.Join(strings.SplitAfter(update.Message.Text, "/cmd")[1:], " ")
-			out := commands.RunCommand(cmd)
+			out := RunCommand(cmd)
 			if len(out) > 4095 {
 				doc := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, tgbotapi.FileBytes{
 					Name:  "command.txt",
@@ -159,7 +157,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			}
 		case "authorize":
 			inCode := strings.Join(strings.SplitAfter(update.Message.Text, "/authorize ")[1:], "")
-			if inCode == settings.AuthorizationCode {
+			if inCode == AuthorizationCode {
 				t.authenticatedUsers[update.Message.From.ID] = &User{authenticated: true, currentPath: getDirPath(os.Args[0])}
 				_, err := t.bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Code correct :)"))
 				if err != nil {
@@ -238,6 +236,10 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 						t.QuickSend(fmt.Sprintf("An error occured while parsing id %q: %v", sID, err), update.Message.Chat.ID)
 						return
 					}
+					if len(user.currentDir.innerFiles)-1 < int(id) {
+						t.QuickSend("You have to provide valid file id", update.Message.Chat.ID)
+						return
+					}
 					fUpload := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, user.currentDir.innerFiles[id].path)
 					_, err = t.bot.Send(fUpload)
 					if err != nil {
@@ -258,7 +260,7 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			strDir := dir.String()
 			if len(strDir) > 4095 {
 				doc := tgbotapi.NewDocumentUpload(update.Message.Chat.ID, tgbotapi.FileBytes{
-					Name:  dir.info.Name(),
+					Name:  dir.info.Name() + ".txt",
 					Bytes: []byte(strDir),
 				})
 				_, err := t.bot.Send(doc)
@@ -283,20 +285,10 @@ func (t Telegraphist) HandleCommand(update tgbotapi.Update) {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 			msg.Text = fmt.Sprintf("Do you want to change your current path to %q ?", nPath)
 			cbID := t.callbackStack.AddCallback()
-			yesItem := CallbackItem{
-				Command: ChangePathRequest,
-				Data:    nPath,
-			}
-			noItem := CallbackItem{
-				Command: SendMessageRequest,
-				Data:    "Path has not changed",
-			}
-			yID := t.callbackStack[cbID].AddItem(yesItem)
-			nID := t.callbackStack[cbID].AddItem(noItem)
 			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("Yes", fmt.Sprintf("%v-%v", cbID, yID)),
-					tgbotapi.NewInlineKeyboardButtonData("No", fmt.Sprintf("%v-%v", cbID, nID)),
+					t.callbackStack.CreateButton(cbID, "Yes", ChangePathRequest, nPath),
+					t.callbackStack.CreateButton(cbID, "No", SendMessageRequest, "Path has not changed"),
 				),
 			)
 			t.bot.Send(msg)

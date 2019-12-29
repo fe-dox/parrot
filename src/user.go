@@ -1,4 +1,4 @@
-package telegraph
+package main
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ type Directory struct {
 	innerDirs  []Item
 }
 
-type Actions interface {
+type UserHandler interface {
 	SetPath(s string) error
 	ScanPath(s string) (Directory, error)
 	ScanCurrentPath() (Directory, error)
@@ -196,16 +196,4 @@ func (t Telegraphist) PrepareFilesKeyboard(d Directory) tgbotapi.InlineKeyboardM
 		allRows[j+1] = dataRow
 	}
 	return tgbotapi.InlineKeyboardMarkup{InlineKeyboard: allRows}
-}
-
-func chunkArray(arr []Item, chunkSize int) [][]Item {
-	var divided [][]Item
-	for i := 0; i < len(arr); i += chunkSize {
-		end := i + chunkSize
-		if end > len(arr) {
-			end = len(arr)
-		}
-		divided = append(divided, arr[i:end])
-	}
-	return divided
 }
