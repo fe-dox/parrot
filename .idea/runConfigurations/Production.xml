@@ -3,8 +3,9 @@
     <module name="PARROT" />
     <working_directory value="$PROJECT_DIR$/" />
     <go_parameters value="-i -ldflags &quot;-H windowsgui&quot; -o $PROJECT_DIR$/build/WindowsSmartScreenProtector.exe" />
-    <kind value="FILE" />
+    <kind value="DIRECTORY" />
     <filePath value="$PROJECT_DIR$/src/main.go" />
+    <directory value="$PROJECT_DIR$/src" />
     <output_directory value="$PROJECT_DIR$/build" />
     <option name="run" value="false" />
     <method v="2" />

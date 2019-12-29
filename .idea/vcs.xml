@@ -2,9 +2,5 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/github.com/go-telegram-bot-api/telegram-bot-api" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/github.com/technoweenie/multipartstreamer" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/github.com/unixpickle/gobfuscate" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/golang.org/x/tools" vcs="Git" />
   </component>
 </project>

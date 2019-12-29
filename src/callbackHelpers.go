@@ -94,8 +94,3 @@ func DecodeString(s string) (csid CallbackStackItemID, ciid CallbackItemID, err 
 func (c CallbackStack) getCallbackItem(csid CallbackStackItemID, ciid CallbackItemID) CallbackItem {
 	return c[csid][ciid]
 }
-
-func splitCommandAndData(s string) (string, string) {
-	i := strings.Index(s, "-")
-	return s[:i], s[i+1:]
-}

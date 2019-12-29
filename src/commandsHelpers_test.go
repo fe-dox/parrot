@@ -12,8 +12,8 @@ func Test_listAllDrives(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"Check what happens",
-			[]string{},
+			"",
+			[]string{"C", "D", "E", "F", "X", "Y"},
 			false,
 		},
 	}
@@ -26,6 +26,42 @@ func Test_listAllDrives(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("listAllDrives() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_splitPath(t *testing.T) {
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantDir  string
+		wantFile string
+	}{
+		{
+			"",
+			args{path: "C:\\Users\\Test\\Test2\\Item.txt"},
+			"C:\\Users\\Test\\Test2\\",
+			"Item.txt",
+		},
+		{
+			"",
+			args{path: "\\\\Server\\Directory\\Item.txt"},
+			"\\\\Server\\Directory\\",
+			"Item.txt",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDir, gotFile := splitPath(tt.args.path)
+			if gotDir != tt.wantDir {
+				t.Errorf("splitPath() gotDir = %v, want %v", gotDir, tt.wantDir)
+			}
+			if gotFile != tt.wantFile {
+				t.Errorf("splitPath() gotFile = %v, want %v", gotFile, tt.wantFile)
 			}
 		})
 	}

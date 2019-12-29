@@ -21,14 +21,19 @@ func listAllDrives() ([]string, error) {
 	}
 	buffer := [1024]byte{}
 	bufferSize := uint32(len(buffer))
-	drives := []string{}
+	var drives []string
 
 	hr, _, _ := getLogicalDriveStringsHandle.Call(uintptr(unsafe.Pointer(&bufferSize)), uintptr(unsafe.Pointer(&buffer)))
 	if hr == 0 {
 		return drives, fmt.Errorf("an error occured")
 	} else {
-
-		bytes.Split(buffer, []byte{58, 92, 0})
+		letterBytes := bytes.Split(buffer[0:], []byte{58, 92, 0})
+		for _, v := range letterBytes {
+			if v[0] == 0 {
+				continue
+			}
+			drives = append(drives, string(v))
+		}
 		return drives, nil
 	}
 }
